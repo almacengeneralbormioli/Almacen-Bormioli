@@ -4544,7 +4544,7 @@ function printEtq(){
     +'body{font-family:Arial,sans-serif;background:#f5f5f5}'
     +'.topbar{background:#1a3a5c;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:99}'
     +'.print-btn{padding:8px 20px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:.88rem;font-weight:700;cursor:pointer}'
-    +'.folio{width:297mm;min-height:210mm;margin:8px auto;background:#fff;padding:8mm 28mm;display:grid;grid-template-columns:120mm 120mm;grid-template-rows:repeat(5,37mm);gap:1mm;justify-content:center}'
+    +'.folio{width:297mm;min-height:210mm;margin:8px auto;background:#fff;padding:6mm 27mm;display:grid;grid-template-columns:120mm 120mm;grid-template-rows:repeat(5,37mm);gap:3mm;justify-content:center}'
     +'.label{border:2px solid #000;border-radius:5px;display:flex;align-items:stretch;overflow:hidden;height:37mm;page-break-inside:avoid;break-inside:avoid}'
     +'.qr-col{width:27mm;min-width:27mm;display:flex;align-items:center;justify-content:center;border-right:1.5px solid #000;padding:0.5mm;background:#fff}'
     +'.qr-col img{width:100%;height:auto;max-height:25mm;image-rendering:pixelated;image-rendering:crisp-edges}'
@@ -4555,7 +4555,7 @@ function printEtq(){
     +'.foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #ccc;padding-top:1mm;margin-top:1mm}'
     +'.ubic{font-size:10.5pt;font-weight:800;color:#000}'
     +'.alm{font-size:9pt;color:#555;font-family:monospace;font-weight:600}'
-    +'@media print{body{background:#fff}.topbar{display:none}.folio{margin:0;padding:8mm 28mm;page-break-after:always;break-after:page}.folio:last-child{page-break-after:avoid}@page{size:A4 landscape;margin:0}}';
+    +'@media print{body{background:#fff}.topbar{display:none}.folio{margin:0;padding:6mm 27mm;page-break-after:always;break-after:page}.folio:last-child{page-break-after:avoid}@page{size:A4 landscape;margin:0}}';
 
   var printWin=window.open('','_blank','width=900,height=750');
   printWin.document.open();
