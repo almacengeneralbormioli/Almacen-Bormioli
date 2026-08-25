@@ -179,6 +179,12 @@ td input[type=number]{width:58px;text-align:center;padding:3px 4px;border:1px so
 .alm-col{font-size:.73rem;font-family:monospace;white-space:nowrap}
 .desc-col{max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .imp-col{font-size:.71rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.etq-row{display:flex;align-items:center;gap:10px;border:1px solid var(--bd);border-radius:8px;padding:9px 12px;margin-bottom:8px;background:#fff;flex-wrap:wrap}
+.etq-row:hover{background:#f8fafc;border-color:var(--az2)}
+.etq-num{color:#94a3b8;font-size:.71rem;min-width:16px}
+.etq-row .desc-col{flex:1;max-width:none;min-width:140px}
+.etq-row .ubic{min-width:66px}
+.etq-row .alm-col{min-width:46px}
 /* HISTORIAL */
 .hist-item{border:1px solid var(--bd);border-radius:7px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .hist-item:hover{background:#f8fafc}
@@ -4421,23 +4427,21 @@ function renderEtqList(){
     return;
   }
   var rows=etqItems.map(function(i,idx){
-    var doneTag=ETQ_DONE[i.codigo]?'<span style="color:var(--vd);font-size:.71rem">✓</span>':'';
-    return '<tr>'
-      +'<td style="color:#94a3b8;font-size:.71rem">'+(idx+1)+'</td>'
-      +'<td class="monocod">'+esc(i.codigo)+'</td>'
-      +'<td class="desc-col" title="'+esc(i.desc)+'">'+esc(i.desc)+'</td>'
-      +'<td class="ubic">'+esc(i.ubic||'—')+'</td>'
-      +'<td class="alm-col">'+esc(i.almacen||'—')+'</td>'
-      +'<td>'+doneTag+'</td>'
-      +'<td><input type="number" value="'+(i.copias||1)+'" min="1" max="20" '
+    var doneTag=ETQ_DONE[i.codigo]?'<span style="color:var(--vd);font-size:.71rem;font-weight:700;min-width:44px;text-align:center">✓ hecha</span>':'<span style="min-width:44px"></span>';
+    return '<div class="etq-row">'
+      +'<span class="etq-num">'+(idx+1)+'</span>'
+      +'<span class="monocod" style="min-width:90px">'+esc(i.codigo)+'</span>'
+      +'<span class="desc-col" title="'+esc(i.desc)+'">'+esc(i.desc)+'</span>'
+      +'<span class="ubic">'+esc(i.ubic||'—')+'</span>'
+      +'<span class="alm-col">'+esc(i.almacen||'—')+'</span>'
+      +doneTag
+      +'<input type="number" value="'+(i.copias||1)+'" min="1" max="20" '
         +'style="width:50px;text-align:center;padding:3px;border:1px solid var(--bd);border-radius:4px" '
-        +'onchange="etqItems['+idx+'].copias=Math.max(1,parseInt(this.value)||1)"></td>'
-      +'<td><button class="del" onclick="etqItems.splice('+idx+',1);renderEtqList()">✕</button></td>'
-      +'</tr>';
+        +'onchange="etqItems['+idx+'].copias=Math.max(1,parseInt(this.value)||1)">'
+      +'<button class="del" onclick="etqItems.splice('+idx+',1);renderEtqList()">✕</button>'
+      +'</div>';
   }).join('');
-  c.innerHTML='<div class="tbl-wrap"><table><thead><tr>'
-    +'<th>#</th><th>Código</th><th>Descripción</th><th>Ubic.</th><th>Almacén</th><th>Estado</th><th>Copias</th><th></th>'
-    +'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  c.innerHTML=rows;
 }
 
 function clearEtqList(){
@@ -4546,7 +4550,7 @@ function printEtq(){
     +'.print-btn{padding:8px 20px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:.88rem;font-weight:700;cursor:pointer}'
     +'.folio{width:297mm;min-height:210mm;margin:8px auto;background:#dfe3e7;padding:6mm 45mm;display:grid;grid-template-columns:102mm 102mm;grid-template-rows:repeat(5,37mm);gap:3mm;justify-content:center}'
     +'.label{background:#fff}'
-    +'.label{border:2px solid #000;border-radius:5px;display:flex;align-items:stretch;overflow:hidden;height:37mm;page-break-inside:avoid;break-inside:avoid;outline:1.4px dashed #8a97a8;outline-offset:1.3mm}'
+    +'.label{border:2px solid #000;border-radius:5px;display:flex;align-items:stretch;overflow:hidden;height:37mm;page-break-inside:avoid;break-inside:avoid}'
     +'.qr-col{width:27mm;min-width:27mm;display:flex;align-items:center;justify-content:center;border-right:1.5px solid #000;padding:0.5mm;background:#fff}'
     +'.qr-col img{width:100%;height:auto;max-height:25mm;image-rendering:pixelated;image-rendering:crisp-edges}'
     +'.qr-ph{width:24mm;height:24mm;background:#eee;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#aaa}'
