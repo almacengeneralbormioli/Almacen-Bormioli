@@ -2789,7 +2789,7 @@ var qrcode = function() {
         <span>Código: <strong id="fiCod"></strong></span>
         <span>Stock SAP: <strong id="fiStock"></strong></span>
         <span>Almacén: <strong><span class="alm-badge" id="fiAlm"></span></strong></span>
-        <span>Ubicación: <strong id="fiUbic"></strong></span>
+        <span>Ubicación: <strong id="fiUbic"></strong> <a href="#" onclick="event.preventDefault();editUbicI()" style="font-size:.72rem;color:var(--az2);text-decoration:underline;margin-left:4px">✎ corregir</a></span>
       </div>
       <div class="qrow">
         <span style="font-size:.8rem;color:var(--sub)">Cantidad física:</span>
@@ -3005,6 +3005,7 @@ var qrcode = function() {
 // STATE
 // ============================================================
 let STOCK={}, IMPS=[], rawF={}, fLoaded={sv:false,exp:false,exp0:false,vale:false};
+let UBIC_OVERRIDES={}; // {codigo: ubicacion corregida a mano} — se guarda en la nube y sobrevive a la carga semanal de SAP
 let dataReady=false;
 let curV=null, curI=null;
 let linesV=[], linesI=[];
@@ -3088,6 +3089,7 @@ async function loadLocal(){
     const c=await cloudLoad('cfg',null); if(c) CFG=Object.assign(CFG,c);
     const i=await cloudLoad('imps',null); if(i) IMPS=i;
     const h=await cloudLoad('hist',null); if(h) HIST=h;
+    const u=await cloudLoad('ubic_overrides',null); if(u) UBIC_OVERRIDES=u;
     // Load cached stock data
     const stockPayload=await cloudLoad('stock',null);
     if(stockPayload && stockPayload.items){
@@ -3095,6 +3097,7 @@ async function loadLocal(){
       // Normalize almacen values (fix cached data with names instead of codes)
       const _AN={'RECAMBIOS BTY':'4006','GENERAL':'4002','RECAMBIOS GW':'4005'};
       Object.values(STOCK).forEach(function(i){ if(_AN[i.almacen]) i.almacen=_AN[i.almacen]; });
+      applyUbicOverrides();
       dataReady=true;
       const nA=Object.keys(STOCK).length;
       document.getElementById('hdrStock').textContent=nA+' artículos';
@@ -3177,7 +3180,7 @@ async function processFiles(){
     STOCK={};
     function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
 
-    // ── 1. SV — artículos con stock: código, descripción, stock, UM, almacén ──
+    // ── 1. SV — descripción, UM y almacén; el stock se toma solo como respaldo (ver bloque 2) ──
     if(rawF.sv){
       btn.textContent='⏳ Leyendo SV...';
       const rows=await xlsxRows(rawF.sv);
@@ -3196,7 +3199,7 @@ async function processFiles(){
       }
     }
 
-    // ── 2. EXPORT — ubicación, tipo almacén, stock (complementa SV) ──
+    // ── 2. EXPORT — fuente del stock (Ctd.), además de ubicación y tipo almacén ──
     if(rawF.exp){
       btn.textContent='⏳ Leyendo EXPORT...';
       const rows=await xlsxRows(rawF.exp);
@@ -3217,6 +3220,9 @@ async function processFiles(){
         if(STOCK[cod]){
           if(ubic) STOCK[cod].ubic=ubic;
           if(alm) STOCK[cod].almacen=alm, STOCK[cod].almNom=ALM_NOM[alm]||alm;
+          // Stock: prevalece EXPORT (Ctd.) sobre lo que trajo SV — SV solo queda como
+          // valor de respaldo si un código no aparece en EXPORT.
+          if(iQ>=0) STOCK[cod].stock=parseFloat(r[iQ])||0;
         }else{
           const desc=iD>=0?String(r[iD]||'').trim():'';
           const stock=iQ>=0?(parseFloat(r[iQ])||0):0;
@@ -3267,6 +3273,7 @@ async function processFiles(){
       }catch(eImp){console.warn('Imp:',eImp);toast('⚠ Imputaciones no cargadas','r');}
     }
 
+    applyUbicOverrides();
     dataReady=true;
     try{ await cloudSave('stock',{items:STOCK,date:new Date().toISOString()}); }catch(e){}
     const nA=Object.keys(STOCK).length;
@@ -3587,6 +3594,33 @@ function doScanSelect(item, tgt){
       toast('✓ '+item.codigo,'g');
     }
   }
+}
+
+// ============================================================
+// CORRECCIÓN MANUAL DE UBICACIÓN (Inventario)
+// ============================================================
+// UBIC_OVERRIDES guarda solo la ubicación corregida por código (sin historial).
+// Se persiste en la nube y se vuelve a aplicar sobre STOCK cada vez que se
+// cargan los archivos de SAP, para que la corrección no se pierda con la
+// actualización semanal.
+function applyUbicOverrides(){
+  Object.keys(UBIC_OVERRIDES).forEach(function(cod){
+    if(STOCK[cod]) STOCK[cod].ubic=UBIC_OVERRIDES[cod];
+  });
+}
+function editUbicI(){
+  if(!curI){ toast('Escanea un artículo primero','r'); return; }
+  const actual=curI.ubic||'';
+  const nueva=prompt('Corregir ubicación de '+curI.codigo+':',actual);
+  if(nueva===null) return; // cancelado
+  const val=nueva.trim();
+  if(val===actual) return;
+  curI.ubic=val;
+  if(STOCK[curI.codigo]) STOCK[curI.codigo].ubic=val;
+  UBIC_OVERRIDES[curI.codigo]=val;
+  cloudSave('ubic_overrides',UBIC_OVERRIDES);
+  document.getElementById('fiUbic').textContent=val||'—';
+  toast('✓ Ubicación corregida','g');
 }
 
 function doScan(raw,tgt){
