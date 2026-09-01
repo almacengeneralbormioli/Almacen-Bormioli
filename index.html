@@ -3670,6 +3670,23 @@ function editUbicLinea(i){
   renderILines();
   toast('✓ Ubicación corregida','g');
 }
+// Igual que editUbicLinea(), pero para un artículo del panel "Verificar por ubicación"
+// que todavía NO se ha añadido al inventario — se corrige antes de pulsar "Añadir",
+// así la línea ya nace con la ubicación correcta y con la marca 🔧 corregida puesta.
+function editUbicVerif(cod){
+  const item=STOCK[cod]; if(!item) return;
+  const nueva=prompt('Corregir ubicación de '+cod+':', item.ubic||'');
+  if(nueva===null) return;
+  const val=nueva.trim();
+  if(val===(item.ubic||'')) return;
+  item.ubic=val;
+  UBIC_OVERRIDES[cod]=val;
+  cloudSave('ubic_overrides',UBIC_OVERRIDES);
+  const ex=linesI.find(function(l){return l.codigo===cod;});
+  if(ex){ ex.ubic=val; renderILines(); } // si ya estaba añadido, se actualiza también esa línea
+  renderInvUbicList();
+  toast('✓ Ubicación corregida','g');
+}
 
 function doScan(raw,tgt){
   // Mantener compatibilidad con llamadas directas (desde historial, etc.)
@@ -3795,7 +3812,7 @@ function renderInvUbicList(){
     return '<div class="etq-row">'
       +'<span class="monocod" style="min-width:90px">'+esc(i.codigo)+'</span>'
       +'<span class="desc-col" title="'+esc(i.desc)+'">'+esc(i.desc)+'</span>'
-      +'<span class="ubic">'+esc(i.ubic||'—')+' '+ubicFlagHTML(i.codigo)+'</span>'
+      +'<span class="ubic">'+esc(i.ubic||'—')+' <a href="#" onclick="event.preventDefault();editUbicVerif(\''+esc(i.codigo)+'\')" style="font-size:.68rem;color:var(--az2);text-decoration:underline">✎</a> '+ubicFlagHTML(i.codigo)+'</span>'
       +'<span style="font-size:.79rem;white-space:nowrap">SAP: '+i.stock+' '+esc(i.um)+'</span>'
       +'<input type="number" id="invUcnt_'+esc(i.codigo)+'" placeholder="Físico" min="0" step="any" style="width:70px;text-align:center;padding:3px;border:1px solid var(--bd);border-radius:4px" value="'+(ya?ya.fisico:'')+'">'
       +'<button class="abtn" style="padding:4px 10px;font-size:.75rem" onclick="addInvUbicItem(\''+esc(i.codigo)+'\')">✓ '+(ya?'Corregir':'Añadir')+'</button>'
