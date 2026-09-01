@@ -3823,8 +3823,7 @@ function renderInvUbicList(){
 function addInvUbicItem(cod){
   const item=STOCK[cod]; if(!item) return;
   const inp=document.getElementById('invUcnt_'+cod);
-  const qty=parseFloat(inp.value);
-  if(isNaN(qty)){ toast('Escribe la cantidad física de '+cod,'r'); return; }
+  const qty=parseFloat(inp.value)||0; // sin cantidad = 0; se puede corregir después en la tabla de abajo, igual que el resto de la app
   const ex=linesI.find(function(l){return l.codigo===item.codigo;});
   if(ex){ ex.fisico=qty; ex.dif=qty-item.stock; }
   else linesI.push({codigo:item.codigo,desc:item.desc,stock:item.stock,fisico:qty,dif:qty-item.stock,um:item.um,ubic:item.ubic,almacen:item.almacen,almNom:item.almNom});
