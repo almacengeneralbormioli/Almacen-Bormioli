@@ -2683,6 +2683,7 @@ var qrcode = function() {
       <div class="sbox az"><div class="n" id="stImp">0</div><div class="l">Imputaciones</div></div>
       <div class="sbox or"><div class="n" id="stUbic">0</div><div class="l">Con ubicación</div></div>
     </div>
+    <div id="stSinAlmWrap" style="font-size:.76rem;color:#b8860b;margin-bottom:10px;display:none">⚠ <strong id="stSinAlm">0</strong> artículos sin almacén/ubicación asignada (llegaron solo desde EXPORT(0)). Puedes añadirles la ubicación al buscarlos en Vale de Salida o Inventario.</div>
     <button class="pbtn gbtn" onclick="goTab('vale')">→ Ir a Vale de Salida</button>
   </div>
 </div>
@@ -2715,7 +2716,7 @@ var qrcode = function() {
         <span>Código: <strong id="fvCod"></strong></span>
         <span>Stock SAP: <strong id="fvStock"></strong></span>
         <span>Almacén: <strong><span class="alm-badge" id="fvAlm"></span></strong></span>
-        <span>Ubicación: <strong id="fvUbic"></strong> <span id="fvUbicFlag"></span></span>
+        <span>Ubicación: <input type="text" id="fvUbic" placeholder="sin ubicar" onchange="saveUbicacion('v')" style="width:110px;padding:2px 6px;border:1px solid var(--bd);border-radius:5px;font-size:.82rem;font-weight:700;color:inherit;font-family:inherit"></span>
         <span>U.M.: <strong id="fvUM"></strong></span>
       </div>
       <div class="qrow">
@@ -2782,6 +2783,26 @@ var qrcode = function() {
     <div class="pulse-row"><div class="dot"></div>Escanea el QR y pon la cantidad física contada</div>
   </div>
 
+  <div class="card">
+    <div class="ct">➕ Añadir varios a la vez</div>
+    <p style="font-size:.77rem;color:var(--sub);margin-bottom:8px">Por ejemplo: toda una calle, códigos que acaben en un número, o una palabra de la descripción.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <select id="bulkField" onchange="bulkFilterPreview()" style="padding:6px;border:1px solid var(--bd);border-radius:6px;font-size:.8rem">
+        <option value="ubic">Ubicación</option>
+        <option value="codigo">Código</option>
+        <option value="desc">Descripción</option>
+      </select>
+      <select id="bulkMode" onchange="bulkFilterPreview()" style="padding:6px;border:1px solid var(--bd);border-radius:6px;font-size:.8rem">
+        <option value="start">Empieza por</option>
+        <option value="contains">Contiene</option>
+        <option value="end">Termina en</option>
+      </select>
+      <input type="text" id="bulkValue" placeholder="ej: A, 4, codo..." oninput="bulkFilterPreview()" style="flex:1;min-width:120px;padding:6px;border:1px solid var(--bd);border-radius:6px;font-size:.8rem">
+    </div>
+    <div id="bulkResults" style="max-height:220px;overflow-y:auto;border-radius:7px"></div>
+    <button class="abtn" id="bulkAddBtn" style="display:none;margin-top:8px" onclick="bulkAddToInv()">✓ Añadir marcados al inventario</button>
+  </div>
+
   <div class="card" style="padding:0;border:none;background:none;box-shadow:none">
     <div class="found" id="foundI">
       <div class="fname" id="fiName"></div>
@@ -2789,7 +2810,7 @@ var qrcode = function() {
         <span>Código: <strong id="fiCod"></strong></span>
         <span>Stock SAP: <strong id="fiStock"></strong></span>
         <span>Almacén: <strong><span class="alm-badge" id="fiAlm"></span></strong></span>
-        <span>Ubicación: <strong id="fiUbic"></strong> <span id="fiUbicFlag"></span> <a href="#" onclick="event.preventDefault();editUbicI()" style="font-size:.72rem;color:var(--az2);text-decoration:underline;margin-left:4px">✎ corregir</a></span>
+        <span>Ubicación: <input type="text" id="fiUbic" placeholder="sin ubicar" onchange="saveUbicacion('i')" style="width:110px;padding:2px 6px;border:1px solid var(--bd);border-radius:5px;font-size:.82rem;font-weight:700;color:inherit;font-family:inherit"></span>
       </div>
       <div class="qrow">
         <span style="font-size:.8rem;color:var(--sub)">Cantidad física:</span>
@@ -2800,30 +2821,6 @@ var qrcode = function() {
         <button class="abtn" onclick="addLineInv()">✓ Registrar</button>
       </div>
     </div>
-  </div>
-
-  <div class="card">
-    <div class="th">
-      <div class="ct" style="margin:0">📍 Verificar por ubicación (calle)</div>
-      <button class="cbtn" onclick="clearInvUbicFilter()">↺ Limpiar</button>
-    </div>
-    <div class="frow" style="margin-bottom:10px">
-      <div class="f" style="flex:1;min-width:140px">
-        <label>Almacén</label>
-        <select id="invFiltAlm" onchange="applyInvUbicFilter()">
-          <option value="">Todos</option>
-          <option value="4002">4002 — GENERAL</option>
-          <option value="4005">4005 — RECAMBIOS GW</option>
-          <option value="4006">4006 — RECAMBIOS BTY</option>
-        </select>
-      </div>
-      <div class="f" style="flex:2;min-width:160px">
-        <label>Ubicación / calle</label>
-        <input type="text" id="invFiltUbic" placeholder="Ej: RD001 (lista toda la calle que empiece así)" oninput="applyInvUbicFilter()">
-      </div>
-    </div>
-    <div id="invUbicResult" style="font-size:.78rem;color:var(--sub);margin-bottom:8px">Escribe una ubicación (o elige almacén) para listar todo lo que SAP dice que debería estar ahí.</div>
-    <div id="invUbicList"></div>
   </div>
 
   <div class="s3" id="invSt" style="display:none;margin-bottom:10px">
@@ -3029,7 +3026,6 @@ var qrcode = function() {
 // STATE
 // ============================================================
 let STOCK={}, IMPS=[], rawF={}, fLoaded={sv:false,exp:false,exp0:false,vale:false};
-let UBIC_OVERRIDES={}; // {codigo: ubicacion corregida a mano} — se guarda en la nube y sobrevive a la carga semanal de SAP
 let dataReady=false;
 let curV=null, curI=null;
 let linesV=[], linesI=[];
@@ -3113,7 +3109,6 @@ async function loadLocal(){
     const c=await cloudLoad('cfg',null); if(c) CFG=Object.assign(CFG,c);
     const i=await cloudLoad('imps',null); if(i) IMPS=i;
     const h=await cloudLoad('hist',null); if(h) HIST=h;
-    const u=await cloudLoad('ubic_overrides',null); if(u) UBIC_OVERRIDES=u;
     // Load cached stock data
     const stockPayload=await cloudLoad('stock',null);
     if(stockPayload && stockPayload.items){
@@ -3121,7 +3116,6 @@ async function loadLocal(){
       // Normalize almacen values (fix cached data with names instead of codes)
       const _AN={'RECAMBIOS BTY':'4006','GENERAL':'4002','RECAMBIOS GW':'4005'};
       Object.values(STOCK).forEach(function(i){ if(_AN[i.almacen]) i.almacen=_AN[i.almacen]; });
-      applyUbicOverrides();
       dataReady=true;
       const nA=Object.keys(STOCK).length;
       document.getElementById('hdrStock').textContent=nA+' artículos';
@@ -3204,7 +3198,7 @@ async function processFiles(){
     STOCK={};
     function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
 
-    // ── 1. SV — descripción, UM y almacén; el stock se toma solo como respaldo (ver bloque 2) ──
+    // ── 1. SV — artículos con stock: código, descripción, stock, UM, almacén ──
     if(rawF.sv){
       btn.textContent='⏳ Leyendo SV...';
       const rows=await xlsxRows(rawF.sv);
@@ -3223,7 +3217,7 @@ async function processFiles(){
       }
     }
 
-    // ── 2. EXPORT — fuente del stock (Ctd.), además de ubicación y tipo almacén ──
+    // ── 2. EXPORT — ubicación, tipo almacén, stock (complementa SV) ──
     if(rawF.exp){
       btn.textContent='⏳ Leyendo EXPORT...';
       const rows=await xlsxRows(rawF.exp);
@@ -3244,9 +3238,6 @@ async function processFiles(){
         if(STOCK[cod]){
           if(ubic) STOCK[cod].ubic=ubic;
           if(alm) STOCK[cod].almacen=alm, STOCK[cod].almNom=ALM_NOM[alm]||alm;
-          // Stock: prevalece EXPORT (Ctd.) sobre lo que trajo SV — SV solo queda como
-          // valor de respaldo si un código no aparece en EXPORT.
-          if(iQ>=0) STOCK[cod].stock=parseFloat(r[iQ])||0;
         }else{
           const desc=iD>=0?String(r[iD]||'').trim():'';
           const stock=iQ>=0?(parseFloat(r[iQ])||0):0;
@@ -3260,10 +3251,12 @@ async function processFiles(){
     if(rawF.exp0){
       btn.textContent='⏳ Leyendo EXPORT(0)...';
       const rows=await xlsxRows(rawF.exp0);
-      // Sin cabecera: col 0 = código, col 1 = descripción
+      // Normalmente sin cabecera (col 0 = código, col 1 = descripción); si la primera fila
+      // parece una cabecera (por si SAP la incluye en alguna exportación), se salta.
       for(let i=0;i<rows.length;i++){
         const r=rows[i];
         const cod=String(r[0]||'').trim(); if(!cod) continue;
+        if(i===0 && (norm(cod).includes('material')||norm(cod).includes('codigo')||norm(cod).includes('articulo'))) continue;
         const desc=String(r[1]||'').trim();
         if(!STOCK[cod]){
           // Artículo con stock 0 no presente en SV ni EXPORT
@@ -3297,14 +3290,19 @@ async function processFiles(){
       }catch(eImp){console.warn('Imp:',eImp);toast('⚠ Imputaciones no cargadas','r');}
     }
 
-    applyUbicOverrides();
     dataReady=true;
     try{ await cloudSave('stock',{items:STOCK,date:new Date().toISOString()}); }catch(e){}
     const nA=Object.keys(STOCK).length;
     const nU=Object.values(STOCK).filter(x=>x.ubic).length;
+    const nSinAlm=Object.values(STOCK).filter(x=>!x.almacen).length;
     document.getElementById('stArt').textContent=nA;
     document.getElementById('stImp').textContent=IMPS.length;
     document.getElementById('stUbic').textContent=nU;
+    const wrapSA=document.getElementById('stSinAlmWrap');
+    if(wrapSA){
+      if(nSinAlm>0){ document.getElementById('stSinAlm').textContent=nSinAlm; wrapSA.style.display='block'; }
+      else{ wrapSA.style.display='none'; }
+    }
     document.getElementById('cardStats').style.display='block';
     document.getElementById('hdrStock').textContent=nA+' artículos';
     document.getElementById('hdrUpd').textContent='Act. '+new Date().toLocaleDateString('es-ES');
@@ -3597,8 +3595,7 @@ function doScanSelect(item, tgt){
       document.getElementById('fvCod').textContent=item.codigo;
       document.getElementById('fvStock').textContent=item.stock+' '+item.um;
       document.getElementById('fvAlm').textContent=item.almacen+(item.almNom?' — '+item.almNom:'');
-      document.getElementById('fvUbic').textContent=item.ubic||'—';
-      document.getElementById('fvUbicFlag').innerHTML=ubicFlagHTML(item.codigo);
+      document.getElementById('fvUbic').value=item.ubic||'';
       document.getElementById('fvUM').textContent=item.um;
       document.getElementById('qVUnit').textContent=item.um;
       document.getElementById('qV').value=1;
@@ -3613,79 +3610,12 @@ function doScanSelect(item, tgt){
       document.getElementById('fiCod').textContent=item.codigo;
       document.getElementById('fiStock').textContent=item.stock+' '+item.um;
       document.getElementById('fiAlm').textContent=item.almacen+(item.almNom?' — '+item.almNom:'');
-      document.getElementById('fiUbic').textContent=item.ubic||'—';
-      document.getElementById('fiUbicFlag').innerHTML=ubicFlagHTML(item.codigo);
+      document.getElementById('fiUbic').value=item.ubic||'';
       document.getElementById('qIUnit').textContent=item.um;
       document.getElementById('qI').value=0;
       toast('✓ '+item.codigo,'g');
     }
   }
-}
-
-// ============================================================
-// CORRECCIÓN MANUAL DE UBICACIÓN (Inventario)
-// ============================================================
-// UBIC_OVERRIDES guarda solo la ubicación corregida por código (sin historial).
-// Se persiste en la nube y se vuelve a aplicar sobre STOCK cada vez que se
-// cargan los archivos de SAP, para que la corrección no se pierda con la
-// actualización semanal.
-// Devuelve el HTML de la marca visual "🔧 corregida" si ese código tiene una
-// ubicación corregida a mano (para que se note de un vistazo, sin guardar
-// un historial completo de quién/cuándo).
-function ubicFlagHTML(cod){
-  if(!UBIC_OVERRIDES[cod]) return '';
-  return '<span style="font-size:.65rem;background:var(--orc);color:var(--or);padding:1px 6px;border-radius:4px;font-weight:700;margin-left:4px;white-space:nowrap" title="Ubicación corregida a mano — no es la que trae SAP">🔧 corregida</span>';
-}
-function applyUbicOverrides(){
-  Object.keys(UBIC_OVERRIDES).forEach(function(cod){
-    if(STOCK[cod]) STOCK[cod].ubic=UBIC_OVERRIDES[cod];
-  });
-}
-function editUbicI(){
-  if(!curI){ toast('Escanea un artículo primero','r'); return; }
-  const actual=curI.ubic||'';
-  const nueva=prompt('Corregir ubicación de '+curI.codigo+':',actual);
-  if(nueva===null) return; // cancelado
-  const val=nueva.trim();
-  if(val===actual) return;
-  curI.ubic=val;
-  if(STOCK[curI.codigo]) STOCK[curI.codigo].ubic=val;
-  UBIC_OVERRIDES[curI.codigo]=val;
-  cloudSave('ubic_overrides',UBIC_OVERRIDES);
-  document.getElementById('fiUbic').textContent=val||'—';
-  document.getElementById('fiUbicFlag').innerHTML=ubicFlagHTML(curI.codigo);
-  toast('✓ Ubicación corregida','g');
-}
-// Igual que editUbicI(), pero para una línea que ya está en la lista de contados (linesI)
-function editUbicLinea(i){
-  const l=linesI[i]; if(!l) return;
-  const nueva=prompt('Corregir ubicación de '+l.codigo+':', l.ubic||'');
-  if(nueva===null) return;
-  const val=nueva.trim();
-  if(val===(l.ubic||'')) return;
-  l.ubic=val;
-  if(STOCK[l.codigo]) STOCK[l.codigo].ubic=val;
-  UBIC_OVERRIDES[l.codigo]=val;
-  cloudSave('ubic_overrides',UBIC_OVERRIDES);
-  renderILines();
-  toast('✓ Ubicación corregida','g');
-}
-// Igual que editUbicLinea(), pero para un artículo del panel "Verificar por ubicación"
-// que todavía NO se ha añadido al inventario — se corrige antes de pulsar "Añadir",
-// así la línea ya nace con la ubicación correcta y con la marca 🔧 corregida puesta.
-function editUbicVerif(cod){
-  const item=STOCK[cod]; if(!item) return;
-  const nueva=prompt('Corregir ubicación de '+cod+':', item.ubic||'');
-  if(nueva===null) return;
-  const val=nueva.trim();
-  if(val===(item.ubic||'')) return;
-  item.ubic=val;
-  UBIC_OVERRIDES[cod]=val;
-  cloudSave('ubic_overrides',UBIC_OVERRIDES);
-  const ex=linesI.find(function(l){return l.codigo===cod;});
-  if(ex){ ex.ubic=val; renderILines(); } // si ya estaba añadido, se actualiza también esa línea
-  renderInvUbicList();
-  toast('✓ Ubicación corregida','g');
 }
 
 function doScan(raw,tgt){
@@ -3697,10 +3627,21 @@ function doScan(raw,tgt){
     const box=document.getElementById(tgt==='v'?'foundV':'foundI');
     box.className='found err'; box.style.display='block';
     document.getElementById(tgt==='v'?'fvName':'fiName').textContent='⚠ Código no encontrado: '+cod;
-    if(tgt==='v') {['fvCod','fvStock','fvAlm','fvUbic','fvUM'].forEach(function(id){document.getElementById(id).textContent='—';}); document.getElementById('fvUbicFlag').innerHTML='';}
-    else {['fiCod','fiStock','fiAlm','fiUbic'].forEach(function(id){document.getElementById(id).textContent='—';}); document.getElementById('fiUbicFlag').innerHTML='';}
+    if(tgt==='v'){ ['fvCod','fvStock','fvAlm','fvUM'].forEach(function(id){document.getElementById(id).textContent='—';}); document.getElementById('fvUbic').value=''; }
+    else{ ['fiCod','fiStock','fiAlm'].forEach(function(id){document.getElementById(id).textContent='—';}); document.getElementById('fiUbic').value=''; }
     toast('No encontrado: '+cod,'r');
   }
+}
+async function saveUbicacion(tgt){
+  const item = tgt==='v' ? curV : curI;
+  if(!item || !STOCK[item.codigo]){ toast('Escanea un artículo primero','r'); return; }
+  const val = document.getElementById(tgt==='v'?'fvUbic':'fiUbic').value.trim();
+  STOCK[item.codigo].ubic = val;
+  item.ubic = val;
+  try{
+    await cloudSave('stock', {items: STOCK, date: new Date().toISOString()});
+    toast('✓ Ubicación actualizada: '+item.codigo, 'g');
+  }catch(e){ toast('⚠ No se pudo guardar la ubicación', 'r'); }
 }
 function dq(d){const i=document.getElementById('qV');i.value=Math.max(0.001,(parseFloat(i.value)||1)+d);}
 function dqi(d){const i=document.getElementById('qI');i.value=Math.max(0,(parseFloat(i.value)||0)+d);}
@@ -3747,7 +3688,7 @@ function renderVLines(){
   linesV.map((l,i)=>{
     const p=l.stock>0?l.cantidad/l.stock:0;
     const sc=p>1?'sba':p>0.7?'swa':'sok';
-    return `<tr><td style="color:#94a3b8;font-size:.71rem">${i+1}</td><td class="monocod">${esc(l.codigo)}</td><td class="desc-col" title="${esc(l.desc)}">${esc(l.desc)}</td><td><input type="number" value="${l.cantidad}" min="0.001" step="any" onchange="linesV[${i}].cantidad=parseFloat(this.value)||0"></td><td style="font-size:.77rem">${esc(l.um)}</td><td class="${sc}">${l.stock}</td><td class="alm-col" title="${esc(l.almNom||'')}">${esc(l.almacen||'—')}</td><td class="ubic">${esc(l.ubic||'—')} ${ubicFlagHTML(l.codigo)}</td><td colspan="2"><select style="width:100%;font-size:.74rem;padding:3px 4px;border:1px solid var(--bd);border-radius:5px;background:#fff" onchange="const s=this.options[this.selectedIndex];linesV[${i}].impCod=s.value;linesV[${i}].impDesc=s.value?s.getAttribute('data-desc'):'';renderVLines()">${impOptionsFor(l.impCod||'')}</select></td><td><button class="del" onclick="linesV.splice(${i},1);renderVLines()">✕</button></td></tr>`;
+    return `<tr><td style="color:#94a3b8;font-size:.71rem">${i+1}</td><td class="monocod">${esc(l.codigo)}</td><td class="desc-col" title="${esc(l.desc)}">${esc(l.desc)}</td><td><input type="number" value="${l.cantidad}" min="0.001" step="any" onchange="linesV[${i}].cantidad=parseFloat(this.value)||0"></td><td style="font-size:.77rem">${esc(l.um)}</td><td class="${sc}">${l.stock}</td><td class="alm-col" title="${esc(l.almNom||'')}">${esc(l.almacen||'—')}</td><td class="ubic">${esc(l.ubic||'—')}</td><td colspan="2"><select style="width:100%;font-size:.74rem;padding:3px 4px;border:1px solid var(--bd);border-radius:5px;background:#fff" onchange="const s=this.options[this.selectedIndex];linesV[${i}].impCod=s.value;linesV[${i}].impDesc=s.value?s.getAttribute('data-desc'):'';renderVLines()">${impOptionsFor(l.impCod||'')}</select></td><td><button class="del" onclick="linesV.splice(${i},1);renderVLines()">✕</button></td></tr>`;
   }).join('')+'</tbody></table></div>';
 }
 function clearVale(){if(confirm('¿Vaciar todas las líneas?')){linesV=[];renderVLines();}}
@@ -3769,73 +3710,59 @@ function renderILines(){
   linesI.map((l,i)=>{
     const dc=l.dif>0?'dp':l.dif<0?'dn':'dz';
     const ds=(l.dif>0?'+':'')+l.dif.toFixed(l.dif%1===0?0:2)+' '+l.um;
-    return `<tr><td style="color:#94a3b8;font-size:.71rem">${i+1}</td><td class="monocod">${esc(l.codigo)}</td><td class="desc-col" title="${esc(l.desc)}">${esc(l.desc)}</td><td><input type="number" value="${l.fisico}" min="0" step="any" onchange="linesI[${i}].fisico=parseFloat(this.value)||0;linesI[${i}].dif=linesI[${i}].fisico-linesI[${i}].stock;renderILines()"></td><td style="font-size:.79rem">${l.stock} ${esc(l.um)}</td><td class="${dc}">${ds}</td><td class="alm-col" title="${esc(l.almNom||'')}">${esc(l.almacen||'—')}</td><td class="ubic">${esc(l.ubic||'—')} <a href="#" onclick="event.preventDefault();editUbicLinea(${i})" style="font-size:.68rem;color:var(--az2);text-decoration:underline">✎</a> ${ubicFlagHTML(l.codigo)}</td><td><button class="del" onclick="linesI.splice(${i},1);renderILines()">✕</button></td></tr>`;
+    return `<tr><td style="color:#94a3b8;font-size:.71rem">${i+1}</td><td class="monocod">${esc(l.codigo)}</td><td class="desc-col" title="${esc(l.desc)}">${esc(l.desc)}</td><td><input type="number" value="${l.fisico}" min="0" step="any" onchange="linesI[${i}].fisico=parseFloat(this.value)||0;linesI[${i}].dif=linesI[${i}].fisico-linesI[${i}].stock;renderILines()"></td><td style="font-size:.79rem">${l.stock} ${esc(l.um)}</td><td class="${dc}">${ds}</td><td class="alm-col" title="${esc(l.almNom||'')}">${esc(l.almacen||'—')}</td><td class="ubic">${esc(l.ubic||'—')}</td><td><button class="del" onclick="linesI.splice(${i},1);renderILines()">✕</button></td></tr>`;
   }).join('')+'</tbody></table></div>';
 }
 function clearInv(){if(confirm('¿Vaciar inventario?')){linesI=[];renderILines();}}
 
-// ============================================================
-// VERIFICAR POR UBICACIÓN (CALLE) — Inventario
-// ============================================================
-// Lista todo lo que STOCK (SAP) dice que debería estar en una ubicación
-// o almacén, para poder recorrer una calle física completa y contar
-// artículo por artículo sin depender de tener cada uno ya escaneado.
-function applyInvUbicFilter(){
-  if(!dataReady) return;
-  const alm=document.getElementById('invFiltAlm').value;
-  const ubic=(document.getElementById('invFiltUbic').value||'').toLowerCase().trim();
-  const ALM_NORM3={'RECAMBIOS BTY':'4006','GENERAL':'4002','RECAMBIOS GW':'4005'};
-  if(!ubic && !alm){ invUbicFiltered=[]; renderInvUbicList(); return; }
-  invUbicFiltered=Object.values(STOCK).filter(function(i){
-    const iAlm=ALM_NORM3[i.almacen]||i.almacen||'';
-    if(alm && iAlm!==alm) return false;
-    if(ubic && !(i.ubic||'').toLowerCase().includes(ubic)) return false;
-    return true;
-  });
-  invUbicFiltered.sort(function(a,b){ return (a.ubic||'zzz').localeCompare(b.ubic||'zzz') || (a.codigo||'').localeCompare(b.codigo||''); });
-  renderInvUbicList();
-}
-function renderInvUbicList(){
-  const res=document.getElementById('invUbicResult');
-  const c=document.getElementById('invUbicList');
-  if(!invUbicFiltered.length){
-    const alm=document.getElementById('invFiltAlm').value, ubic=document.getElementById('invFiltUbic').value;
-    res.textContent = (alm||ubic) ? 'Sin artículos con ese filtro.' : 'Escribe una ubicación (o elige almacén) para listar todo lo que SAP dice que debería estar ahí.';
-    c.innerHTML='';
+let _bulkMatches=[];
+function bulkFilterPreview(){
+  const field=document.getElementById('bulkField').value;
+  const mode=document.getElementById('bulkMode').value;
+  const val=document.getElementById('bulkValue').value.trim().toLowerCase();
+  const resEl=document.getElementById('bulkResults');
+  const btn=document.getElementById('bulkAddBtn');
+  if(!val){ resEl.innerHTML=''; btn.style.display='none'; _bulkMatches=[]; return; }
+  _bulkMatches=Object.values(STOCK).filter(function(i){
+    const f=(field==='ubic'?(i.ubic||''):field==='codigo'?(i.codigo||''):(i.desc||'')).toLowerCase();
+    if(!f) return false;
+    if(mode==='start') return f.startsWith(val);
+    if(mode==='end') return f.endsWith(val);
+    return f.includes(val);
+  }).slice(0,300);
+  if(!_bulkMatches.length){
+    resEl.innerHTML='<div style="padding:8px;font-size:.78rem;color:var(--sub)">Sin coincidencias</div>';
+    btn.style.display='none';
     return;
   }
-  const contados=invUbicFiltered.filter(function(i){ return linesI.find(function(l){return l.codigo===i.codigo;}); }).length;
-  res.innerHTML='<strong>'+invUbicFiltered.length+'</strong> artículos en esa ubicación · <span style="color:var(--vd)">✓ '+contados+' ya contados</span>';
-  c.innerHTML = invUbicFiltered.map(function(i){
-    const ya=linesI.find(function(l){return l.codigo===i.codigo;});
-    const doneTag = ya ? '<span style="color:var(--vd);font-size:.71rem;font-weight:700;white-space:nowrap">✓ contado ('+ya.fisico+')</span>' : '';
-    return '<div class="etq-row">'
-      +'<span class="monocod" style="min-width:90px">'+esc(i.codigo)+'</span>'
-      +'<span class="desc-col" title="'+esc(i.desc)+'">'+esc(i.desc)+'</span>'
-      +'<span class="ubic">'+esc(i.ubic||'—')+' <a href="#" onclick="event.preventDefault();editUbicVerif(\''+esc(i.codigo)+'\')" style="font-size:.68rem;color:var(--az2);text-decoration:underline">✎</a> '+ubicFlagHTML(i.codigo)+'</span>'
-      +'<span style="font-size:.79rem;white-space:nowrap">SAP: '+i.stock+' '+esc(i.um)+'</span>'
-      +'<input type="number" id="invUcnt_'+esc(i.codigo)+'" placeholder="Físico" min="0" step="any" style="width:70px;text-align:center;padding:3px;border:1px solid var(--bd);border-radius:4px" value="'+(ya?ya.fisico:'')+'">'
-      +'<button class="abtn" style="padding:4px 10px;font-size:.75rem" onclick="addInvUbicItem(\''+esc(i.codigo)+'\')">✓ '+(ya?'Corregir':'Añadir')+'</button>'
-      +doneTag
-      +'</div>';
-  }).join('');
+  resEl.innerHTML='<div style="font-size:.75rem;color:var(--sub);padding:4px 2px">'+_bulkMatches.length+' artículos encontrados</div>'+
+    _bulkMatches.map(function(i,idx){
+      return '<label style="display:flex;gap:8px;align-items:center;padding:5px 8px;border-top:1px solid var(--bd);font-size:.78rem;cursor:pointer">'+
+        '<input type="checkbox" class="bulkChk" data-idx="'+idx+'" checked>'+
+        '<span class="monocod" style="min-width:90px">'+esc(i.codigo)+'</span>'+
+        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333">'+esc(i.desc||'')+'</span>'+
+        '<span style="color:var(--sub);white-space:nowrap">'+esc(i.ubic||'—')+'</span>'+
+      '</label>';
+    }).join('');
+  btn.style.display='inline-block';
+  btn.textContent='✓ Añadir '+_bulkMatches.length+' marcados al inventario';
 }
-function addInvUbicItem(cod){
-  const item=STOCK[cod]; if(!item) return;
-  const inp=document.getElementById('invUcnt_'+cod);
-  const qty=parseFloat(inp.value)||0; // sin cantidad = 0; se puede corregir después en la tabla de abajo, igual que el resto de la app
-  const ex=linesI.find(function(l){return l.codigo===item.codigo;});
-  if(ex){ ex.fisico=qty; ex.dif=qty-item.stock; }
-  else linesI.push({codigo:item.codigo,desc:item.desc,stock:item.stock,fisico:qty,dif:qty-item.stock,um:item.um,ubic:item.ubic,almacen:item.almacen,almNom:item.almNom});
+function bulkAddToInv(){
+  const checks=document.querySelectorAll('.bulkChk:checked');
+  let added=0;
+  checks.forEach(function(chk){
+    const i=_bulkMatches[parseInt(chk.dataset.idx,10)];
+    if(!i) return;
+    if(!linesI.find(function(l){return l.codigo===i.codigo;})){
+      linesI.push({codigo:i.codigo,desc:i.desc,stock:i.stock,fisico:0,dif:0-i.stock,um:i.um,ubic:i.ubic,almacen:i.almacen,almNom:i.almNom});
+      added++;
+    }
+  });
   renderILines();
-  renderInvUbicList();
-  toast('✓ '+cod+' añadido','g');
-}
-function clearInvUbicFilter(){
-  document.getElementById('invFiltAlm').value='';
-  document.getElementById('invFiltUbic').value='';
-  invUbicFiltered=[];
-  renderInvUbicList();
+  document.getElementById('bulkResults').innerHTML='';
+  document.getElementById('bulkValue').value='';
+  document.getElementById('bulkAddBtn').style.display='none';
+  toast(added?('✓ '+added+' artículos añadidos al inventario'):'Ya estaban todos añadidos','g');
 }
 
 // ============================================================
@@ -4431,7 +4358,6 @@ function importImps(inp){
 // ============================================================
 let etqItems = [];          // lista para imprimir ahora
 let etqFiltered = [];       // resultado del filtro actual
-let invUbicFiltered = [];   // resultado del filtro "verificar por ubicación" en Inventario
 let ETQ_DONE = {};          // {codigo: true} — guardado en la nube (Firestore)
 let etqSearchTimer = null;
 
@@ -4565,7 +4491,7 @@ function clearEtqFilters(){
 function addAllFiltered(){
   if(!etqFiltered.length){ toast('No hay artículos con ese filtro','r'); return; }
   if(etqFiltered.length>200){
-    if(!confirm('Son '+etqFiltered.length+' artículos. ¿Añadir todos?\n(Se imprimirán en '+Math.ceil(etqFiltered.length/10)+' folios)')) return;
+    if(!confirm('Son '+etqFiltered.length+' artículos. ¿Añadir todos?\n(Se imprimirán en '+Math.ceil(etqFiltered.length/14)+' folios)')) return;
   }
   var added=0;
   etqFiltered.forEach(function(i){
