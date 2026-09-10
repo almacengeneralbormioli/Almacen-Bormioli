@@ -2800,9 +2800,9 @@ var qrcode = function() {
       <input type="text" id="bulkValue" placeholder="ej: A, 4, codo..." oninput="bulkFilterPreview()" style="flex:1;min-width:120px;padding:6px;border:1px solid var(--bd);border-radius:6px;font-size:.8rem">
     </div>
     <div id="bulkResults" style="max-height:220px;overflow-y:auto;border-radius:7px"></div>
-    <div id="bulkSelBar" style="display:none;gap:8px;margin-top:6px">
-      <button type="button" class="pbtn" style="flex:none;padding:5px 10px;font-size:.76rem" onclick="bulkSelectAll(true)">☑ Seleccionar todos</button>
-      <button type="button" class="pbtn" style="flex:none;padding:5px 10px;font-size:.76rem" onclick="bulkSelectAll(false)">☐ Ninguno</button>
+    <div id="bulkSelBar" style="display:none;gap:8px;margin-top:6px;flex-wrap:wrap">
+      <button type="button" onclick="bulkSelectAll(true)" style="width:auto;flex:none;padding:6px 12px;font-size:.76rem;font-weight:700;background:var(--az2);color:#fff;border:none;border-radius:7px;cursor:pointer">☑ Seleccionar todos</button>
+      <button type="button" onclick="bulkSelectAll(false)" style="width:auto;flex:none;padding:6px 12px;font-size:.76rem;font-weight:700;background:#e5e7eb;color:#333;border:none;border-radius:7px;cursor:pointer">☐ Ninguno</button>
     </div>
     <button class="abtn" id="bulkAddBtn" style="display:none;margin-top:8px" onclick="bulkAddToInv()">✓ Añadir marcados al inventario</button>
   </div>
