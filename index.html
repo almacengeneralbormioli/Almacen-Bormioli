@@ -2716,7 +2716,7 @@ var qrcode = function() {
         <span>Código: <strong id="fvCod"></strong></span>
         <span>Stock SAP: <strong id="fvStock"></strong></span>
         <span>Almacén: <strong><span class="alm-badge" id="fvAlm"></span></strong></span>
-        <span>Ubicación: <input type="text" id="fvUbic" placeholder="sin ubicar" onchange="saveUbicacion('v')" style="width:110px;padding:2px 6px;border:1px solid var(--bd);border-radius:5px;font-size:.82rem;font-weight:700;color:inherit;font-family:inherit"></span>
+        <span>📍 Ubicación (editable): <input type="text" id="fvUbic" placeholder="escribe la ubicación" onchange="saveUbicacion('v')" style="width:130px;padding:3px 7px;border:2px solid #f5b400;border-radius:5px;font-size:.82rem;font-weight:700;color:inherit;font-family:inherit;background:#fffbea"></span>
         <span>U.M.: <strong id="fvUM"></strong></span>
       </div>
       <div class="qrow">
@@ -2800,6 +2800,10 @@ var qrcode = function() {
       <input type="text" id="bulkValue" placeholder="ej: A, 4, codo..." oninput="bulkFilterPreview()" style="flex:1;min-width:120px;padding:6px;border:1px solid var(--bd);border-radius:6px;font-size:.8rem">
     </div>
     <div id="bulkResults" style="max-height:220px;overflow-y:auto;border-radius:7px"></div>
+    <div id="bulkSelBar" style="display:none;gap:8px;margin-top:6px">
+      <button type="button" class="pbtn" style="flex:none;padding:5px 10px;font-size:.76rem" onclick="bulkSelectAll(true)">☑ Seleccionar todos</button>
+      <button type="button" class="pbtn" style="flex:none;padding:5px 10px;font-size:.76rem" onclick="bulkSelectAll(false)">☐ Ninguno</button>
+    </div>
     <button class="abtn" id="bulkAddBtn" style="display:none;margin-top:8px" onclick="bulkAddToInv()">✓ Añadir marcados al inventario</button>
   </div>
 
@@ -2810,7 +2814,7 @@ var qrcode = function() {
         <span>Código: <strong id="fiCod"></strong></span>
         <span>Stock SAP: <strong id="fiStock"></strong></span>
         <span>Almacén: <strong><span class="alm-badge" id="fiAlm"></span></strong></span>
-        <span>Ubicación: <input type="text" id="fiUbic" placeholder="sin ubicar" onchange="saveUbicacion('i')" style="width:110px;padding:2px 6px;border:1px solid var(--bd);border-radius:5px;font-size:.82rem;font-weight:700;color:inherit;font-family:inherit"></span>
+        <span>📍 Ubicación (editable): <input type="text" id="fiUbic" placeholder="escribe la ubicación" onchange="saveUbicacion('i')" style="width:130px;padding:3px 7px;border:2px solid #f5b400;border-radius:5px;font-size:.82rem;font-weight:700;color:inherit;font-family:inherit;background:#fffbea"></span>
       </div>
       <div class="qrow">
         <span style="font-size:.8rem;color:var(--sub)">Cantidad física:</span>
@@ -3722,7 +3726,8 @@ function bulkFilterPreview(){
   const val=document.getElementById('bulkValue').value.trim().toLowerCase();
   const resEl=document.getElementById('bulkResults');
   const btn=document.getElementById('bulkAddBtn');
-  if(!val){ resEl.innerHTML=''; btn.style.display='none'; _bulkMatches=[]; return; }
+  const selBar=document.getElementById('bulkSelBar');
+  if(!val){ resEl.innerHTML=''; btn.style.display='none'; selBar.style.display='none'; _bulkMatches=[]; return; }
   _bulkMatches=Object.values(STOCK).filter(function(i){
     const f=(field==='ubic'?(i.ubic||''):field==='codigo'?(i.codigo||''):(i.desc||'')).toLowerCase();
     if(!f) return false;
@@ -3733,22 +3738,34 @@ function bulkFilterPreview(){
   if(!_bulkMatches.length){
     resEl.innerHTML='<div style="padding:8px;font-size:.78rem;color:var(--sub)">Sin coincidencias</div>';
     btn.style.display='none';
+    selBar.style.display='none';
     return;
   }
-  resEl.innerHTML='<div style="font-size:.75rem;color:var(--sub);padding:4px 2px">'+_bulkMatches.length+' artículos encontrados</div>'+
+  resEl.innerHTML='<div style="font-size:.75rem;color:var(--sub);padding:4px 2px">'+_bulkMatches.length+' artículos encontrados — marca los que quieras añadir</div>'+
     _bulkMatches.map(function(i,idx){
       return '<label style="display:flex;gap:8px;align-items:center;padding:5px 8px;border-top:1px solid var(--bd);font-size:.78rem;cursor:pointer">'+
-        '<input type="checkbox" class="bulkChk" data-idx="'+idx+'" checked>'+
+        '<input type="checkbox" class="bulkChk" data-idx="'+idx+'" onchange="updateBulkCount()">'+
         '<span class="monocod" style="min-width:90px">'+esc(i.codigo)+'</span>'+
         '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333">'+esc(i.desc||'')+'</span>'+
         '<span style="color:var(--sub);white-space:nowrap">'+esc(i.ubic||'—')+'</span>'+
       '</label>';
     }).join('');
-  btn.style.display='inline-block';
-  btn.textContent='✓ Añadir '+_bulkMatches.length+' marcados al inventario';
+  selBar.style.display='flex';
+  updateBulkCount();
+}
+function bulkSelectAll(state){
+  document.querySelectorAll('.bulkChk').forEach(function(chk){ chk.checked=state; });
+  updateBulkCount();
+}
+function updateBulkCount(){
+  const n=document.querySelectorAll('.bulkChk:checked').length;
+  const btn=document.getElementById('bulkAddBtn');
+  if(n>0){ btn.style.display='inline-block'; btn.textContent='✓ Añadir '+n+' marcados al inventario'; }
+  else{ btn.style.display='none'; }
 }
 function bulkAddToInv(){
   const checks=document.querySelectorAll('.bulkChk:checked');
+  if(!checks.length){ toast('Marca al menos un artículo','r'); return; }
   let added=0;
   checks.forEach(function(chk){
     const i=_bulkMatches[parseInt(chk.dataset.idx,10)];
@@ -3760,6 +3777,7 @@ function bulkAddToInv(){
   });
   renderILines();
   document.getElementById('bulkResults').innerHTML='';
+  document.getElementById('bulkSelBar').style.display='none';
   document.getElementById('bulkValue').value='';
   document.getElementById('bulkAddBtn').style.display='none';
   toast(added?('✓ '+added+' artículos añadidos al inventario'):'Ya estaban todos añadidos','g');
